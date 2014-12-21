@@ -67,9 +67,9 @@ fit3<-lm(mpg ~ am + wt + cyl ,mtcars)
 cat(sprintf("%s: %.3f\n%s: %.3f\n%s: %.3f","mpg ~ am + wt: r.squared",summary(fit1)$r.squared,"mpg ~ am + cyl: r.squared", summary(fit2)$r.squared,"mpg ~ am + wt + cyl: r.squared", summary(fit3)$r.squared))
 ```
 ### Step analysis & Anova  
-In order to get an alternate view the available factors were run through the step function. This resulted in a model that included the time over a quarter mile. The recommended model from the step function is: ```mpg ~ wt + qsec```
+In order to get an alternate view the available factors were run through the step function (Appendix D). This resulted in a model that included the time over a quarter mile. The recommended model from the step function is: ```mpg ~ wt + qsec```
 
-It seems like transmission maybe more of an interaction than a stand alone variable. An Anova on some likely models was run. This suggested two models for final analysis, ```mpg ~ am + wt + cyl``` & ```mpg ~ am * wt + qsec```
+It seems like transmission maybe more of an interaction than a stand alone variable. An Anova on some likely models was run. (Appendix E). This suggested two models for final analysis, ```mpg ~ am + wt + cyl``` & ```mpg ~ am * wt + qsec```
 
 ### Final model
 The models from the step function and the the anova all had transmission coefficients that were not significant which prevented quantisation of the mpg differences. By manual playing around the final model was selected. **```mpg ~ am * wt + cyl```** qsec is no longer a predictor. Transmission interacts with weight, as the weight increases the mpg advantage of manual cars decreases.
@@ -79,7 +79,7 @@ summary( lm(mpg ~ am * wt + cyl ,mtcars) )$coef
 sprintf("%s: %.3f","mpg ~ am * wt + cyl: r.squared",(summary(lm(mpg~ am * wt + cyl,mtcars))$r.squared))
 ```
 
-To verify this a residual plot (Appendix D) was done and the residuals exhibited no signs of major undue influence. 
+To verify this a residual plot *Appendix G) was done and the residuals exhibited no signs of undue influence. 
 
 
 #Appendix
@@ -115,8 +115,58 @@ cor(mtcars)[c(1:4,6),]
 options(digits=3)
 ```
 
+## D: Stepwise determination of likely models
+Using a stepwise test to break down the model suggests mpg~wt+am+qsec is the best fit. The final result is shown
+```{r, eval=FALSE}
+stepoutput <- step(lm( mpg~., mtcars))
+```
+```
+## Step: AIC=61.31
+## mpg ~ wt + qsec + am
+##
+## Df Sum of Sq RSS AIC
+## <none> 169.29 61.307
+## - am 1 26.178 195.46 63.908
+## - qsec 1 109.034 278.32 75.217
+## - wt 1 183.347 352.63 82.790
+```
 
-## D:Residuals
+## E: Anova of interactions
+Using Anova to finalise the best interaction model
+
+```{r, }
+fit1 <- lm( mpg~am, mtcars)
+fit2 <- update( fit1, mpg~am + wt)
+fit3 <- update( fit1, mpg~am + wt + cyl)
+fit4 <- update( fit1, mpg~am + wt + qsec)
+fit5 <- update( fit1, mpg~am * wt )
+fit6 <- update( fit1, mpg~am * wt + qsec)
+fit7 <- update( fit1, mpg~am * wt + cyl)
+anova( fit1, fit2, fit3, fit4, fit5, fit6 ,fit7)
+```
+
+
+## F: Comparison of 3 best fit models
+The Step function put forward ```mpg ~ am + wt + qsec``` while from the Anova analysis ```mpg ~ am + wt + cyl``` looked equally as strong but also the weight interaction model ```mpg ~ am * wt + qsec``` looks strong. 
+
+The model ```mpg ~ am * wt + cyl``` has the highest adjusted R-squared of 0.88, its p-value is the lowest 7.2e-13 of the three and all coefficients are significant to the 0.01 significance level or higher
+
+```{r, }
+summary( lm( mpg~am + wt + qsec, mtcars) )$coef
+summary( lm( mpg~am + wt + cyl, mtcars) )$coef
+summary( lm( mpg~am * wt + qsec, mtcars) )$coef
+```
+
+However none of these have significance in all their coefficients. This would make quantifying the differences in mpg subject to much more uncertainty.
+
+Our last model we derive by just trying and seeing.
+```{r, }
+summary( lm( mpg~am * wt + cyl, mtcars) )
+```
+This model has signifiant coefficients, a relatively high adjusted R-squared, and a very low p-value. This is the one we are going for.
+
+
+## G:Residuals
 The residual plots appear relatively normally distributed and show any observations with undue influence.
 
 ```{r, echo=FALSE}
