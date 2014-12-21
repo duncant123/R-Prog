@@ -1,26 +1,94 @@
 ---
 title: "Regmods-016 Course Project"
 author: "Duncan Turnbull"
-date: "17 December 2014"
-output: html_document
+date: "21 December 2014"
+output: pdf_document
 ---
 
 
-# Executive Summary
+## Executive Summary
 This project seeks to answer two key questions around fuel consumption based on car data from the 1974 Motor Trend US magazine: 
 
-+ "Is an automatic or manual transmission better for MPG”. 
++ "Is an automatic or manual transmission better for MPG"
 + "Quantify the MPG difference between automatic and manual transmissions"
-The data provided had 32 samples with 11 variables. Correlations amongst the variables suggests that weight and the number of cylinders were also variables of interest
 
-Once consideration for weight and engine cylinders are included it does not appear that a significant differnce between manual and automatic transmission can be seen. The primary factors are the car weight and the engine size.
+The data provided has 32 samples with 11 variables. The data is reasonably normally distributed. Reviewing correlations between the variables suggested that weight and the number of cylinders were other variables of interest
 
-## Look at the data
-Looking particularly at how automatic and manual transmissions vary
+The relationships were modelled using ordinary least squares. Initially it appeared as if a there was a strong relationship between transmission type and miles per gallon. However cnce consideration for weight and engine cylinders were included that relationship no longer appeared to be significant.
+
+The primary factors driving miles per gallon are the car weight and the number of cylinders.
+
+Given the available data it is not possible to reliably calculate or confirm there is a difference in miles per gallon between automatic and manual transmission at the 95% confidence level.
 
 
-##1. Identify variables of interest
-Potential factors in the data - am (Transmission 0 = auto, 1 = manual)
+## Examining the data 
+The observations for mpg and weight appear relatively normally distributed. The transmission is either automatic or manual, and there are either 4,6, or 8 cylinders (Appendix A)
+
+Initial examination appears to show (Appendix B) that the mean Manual Transmission provides much better performance than the mean Automatic performance. 
+
+## Identify variables of interest
+By correlating the data (Appendix C) mpg correlates most strongly to weight (0.87) and then cylinders (0.85). It also correlates to displacement(0.85) and horsepower(0.78). The correlation to transmission (0.60) is relatively weaker, implying it is not the best predictor of miles per gallon.
+
+### Cylinders Horsepower Displacement
+Looking at cylinders, horsepower & displacement they are all reasonably strongly correlated with themselves. They are all related to the engine size and so the model only needs one variable to represent that effect. Cylinders are the most strongly correlated with MPG and also they are a factor so Cylinders was chosen out of these three.
+
+## Modelling tests
+
+### Initial model
+The initial model evaluated is miles per gallon(mpg) vs transmission (am). This appears to show an improvement of 7 mpg for manual transmission over automatic. The transmission as a predictor is significant at over 99%, however this maybe because it is the only predictor. We will look further. We notice the r.squared only explains 36% of the variance
+```{r echo=FALSE}
+summary( lm(mpg ~ factor(am) ,mtcars) )$coef
+sprintf("%s: %.3f","mpg~wt+cyl: r.squared",(summary(lm(mpg~wt+cyl,mtcars))$r.squared))
+```
+
+### Transmission confidence levels
+The 95% confidence levels (Appendix D) model of this model of transmission against mpg range across 0 suggesting the factors in this model are not significant.
+
+### Adding Weight to the model
+Weight had the highest correlation to mpg. Adding weight to the model changes the impact such that transmission is no longer a statistically significant event (p=.988) Appendix ???
+```{r echo = FALSE}
+summary( lm(mpg ~ factor(am) +wt ,mtcars) )$coef
+```
+
+### Adding Cylinders
+Weight had the highest correlation to mpg. If we add weight to the model 
+```{r echo = FALSE}
+fit<-  lm(mpg ~ factor(am) +cyl ,mtcars) 
+summary(fit)$coef
+```
+
+### Adding Weight + Cylinder
+Adding both weight and cylinders to the model 
+```{r echo = FALSE}
+fit<-  lm(mpg ~ factor(am) + wt +cyl ,mtcars) 
+summary(fit)$coef
+
+cat(sprintf("%s: %.3f","mpg~am: r.squared", summary(lm(mpg~am,mtcars))$r.squared))
+cat(sprintf("%s: %.3f","mpg~am+wt: r.squared", summary(lm(mpg~am+wt,mtcars))$r.squared))
+cat(sprintf("%s: %.3f","mpg~am+cyl: r.squared", summary(lm(mpg~am+cyl,mtcars))$r.squared))
+cat(sprintf("%s: %.3f","mpg~am+wt+cyl: r.squared", summary(lm(mpg~am+wt+cyl,mtcars))$r.squared))
+cat(sprintf("%s: %.3f","mpg~wt+cyl: r.squared", summary(lm(mpg~wt+cyl,mtcars))$r.squared))
+```
+
+###
+```{r}
+fit<- lm(mpg ~ factor(am) ,mtcars) 
+fit2 <-  update(fit, mpg ~ am + wt ) 
+fit3 <-  update(fit, mpg ~ am + wt +cyl ) 
+fit4 <-  update(fit, mpg ~ am + wt +cyl+hp ) 
+anova(fit,fit2, fit3,fit4)
+```
+The lack of significance at 95% level helps confirm that hp is not a useful variate to add to the model
+
+But running the model the other way
+```{r}
+fit<- lm(mpg ~  wt ,mtcars) 
+fit2 <-  update(fit, mpg ~ wt+ cyl ) 
+fit3 <-  update(fit, mpg ~ wt+ cyl + am  ) 
+fit4 <-  update(fit, mpg ~ wt+ cyl + am +hp ) 
+anova(fit,fit2, fit3,fit4)
+```
+
 
 Look at multi variate model, 
 rule out anything check VIF
@@ -28,10 +96,13 @@ qsec (1/4 mile time) seems unlikely, maybe drat (rear axle ratio) too
 Other variables probably affect fuel consumption similarly whether manual or auto i.e. weight, cylinders, displacement, horsepower, V/S number of carburetors
 The number of forward gears will probably influence the choice
 
-##2 .Final models 
+## .Final models 
+The final model for mpg does not require transmission. This as an extra factor will be biasing the results
 ```{r}
-fit <- lm(mpg ~ factor(am) +wt ,mtcars)
+summary( lm(mpg ~ am * wt ,mtcars) )$coef
 ```
+
+## Final Outcome
 
 Exploratory Data analyses
 Fit multiple models and detail strategy for model selection
@@ -44,13 +115,13 @@ Was the report done in Rmd (knitr)?
 
 #Appendix
 
-## Density / distribution of interesting variable
+## A: Density / distribution of interesting variable
 ```{r }
 par(mfrow=c(2,2)) ; plot(density(mtcars$mpg));plot(density(mtcars$wt));
 plot(density(mtcars$cyl));plot(density(mtcars$am))
 ```
 
-##MPG by transmission
+## B: MPG by transmission
 From the boxplot below it appears as if there are clear distinctions between the MPG for different transmission types. However there could be some confounding variables.
 
 ```{r, echo=FALSE}
@@ -60,15 +131,22 @@ boxplot( mpg~ trans ,data=mtcars ,main ="MPG by Transmission", ylab="MPG", xlab=
 legend("topleft", inset=.05, title="Transmission", c("Auto","Manual"), fill=terrain.colors(3), horiz=TRUE)
 ```
 
-##Correlations
+## C: Correlations
 The correlation table shows strong correlation to weight (wt), number of cylinders (cyl), size of engines (disp), gross horsepower (hp), however hp, disp and cyl are all strongly correlated with each other suggesting only one factor is required. For our purposes we choose cyl, the number of cylinders.
 
 ```{r, echo=FALSE}
 cor(mtcars)[c(1:4,6),]
 ```
 
+## D: How useful is transmission?
+Looking at the confidence levels of a basic model through the origin shows that the levels are primarily either side of 0, meaning they could be 0. This doesn't suggest this is a significant variable.
+```{r}
+fit <- lm(mpg~am ,mtcars)
+confint(fit, level = 0.95)
+```
 
-##Residuals
+
+## E:Residuals
 The residual plots appear relatively normally distributed and show any observations with undue influence.
 
 ```{r, echo=FALSE}
